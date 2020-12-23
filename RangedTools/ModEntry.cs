@@ -100,7 +100,9 @@ namespace RangedTools
                 if (e.Button.IsUseToolButton() && (withClick || !Config.CustomRangeOnClickOnly))
                 {
                     Farmer player = Game1.player;
-                    Vector2 mousePosition = new Vector2(e.Cursor.AbsolutePixels.X, e.Cursor.AbsolutePixels.Y);
+                    Vector2 mousePosition = Utility.ModifyCoordinatesFromUIScale(e.Cursor.ScreenPixels);
+                    mousePosition.X += Game1.viewport.X;
+                    mousePosition.Y += Game1.viewport.Y;
                     
                     if (player.CurrentTool != null && !player.UsingTool) // Have a tool selected, not in the middle of using it
                     {
@@ -211,7 +213,8 @@ namespace RangedTools
                             return true; // Go to original function (where it should just terminate due to tool being null, but still)
                         float stamina = who.stamina;
                         specialClick = false;
-                        who.CurrentTool.DoFunction(who.currentLocation, (int)ModEntry.specialClickLocation.X, (int)ModEntry.specialClickLocation.Y, 1, who);
+                        if (who.IsLocalPlayer)
+                            who.CurrentTool.DoFunction(who.currentLocation, (int)ModEntry.specialClickLocation.X, (int)ModEntry.specialClickLocation.Y, 1, who);
                         
                         // Usual post-DoFunction checks from original
                         who.lastClick = Vector2.Zero;
