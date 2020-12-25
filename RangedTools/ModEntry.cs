@@ -8,7 +8,6 @@ using Netcode;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
-using StardewValley.Menus;
 using StardewValley.TerrainFeatures;
 using StardewValley.Tools;
 
@@ -20,8 +19,8 @@ namespace RangedTools
         private static IMonitor myMonitor;
         private static ModConfig Config;
         
-        public static bool specialClick = false;
         public static Vector2 specialClickLocation = Vector2.Zero;
+        public static SButton heldButton = SButton.None;
         
         public static bool eventUpReset = false;
         public static bool eventUpOld = false;
@@ -40,6 +39,7 @@ namespace RangedTools
                 Config = this.Helper.ReadConfig<ModConfig>();
                 
                 helper.Events.Input.ButtonPressed += this.OnButtonPressed;
+                helper.Events.Input.CursorMoved += this.OnCursorMoved;
                 
                 HarmonyInstance harmonyInstance = HarmonyInstance.Create(this.ModManifest.UniqueID);
                 
@@ -155,17 +155,15 @@ namespace RangedTools
                     
                     if (player.CurrentTool != null && !player.UsingTool) // Have a tool selected, not in the middle of using it
                     {
-                        specialClick = false; // Reset override flag
-                        
                         // If setting is enabled, face all mouse clicks when a tool/weapon is equipped.
                         if (withClick && shouldToolTurnToFace(player.CurrentTool))
                             player.faceGeneralDirection(mousePosition);
                         
                         if (positionValidForExtendedRange(player, mousePosition))
                         {
-                            // Set this location as an override to be used a bit later, when the tool is actually used.
-                            specialClick = true;
+                            // Set this as an override location once tool is used.
                             specialClickLocation = mousePosition;
+                            heldButton = e.Button;
                         }
                     }
                 }
@@ -174,6 +172,24 @@ namespace RangedTools
             {
                 Log("Error in button press: " + ex.Message + Environment.NewLine + ex.StackTrace);
             }
+        }
+        
+        /// <summary>Checks for mouse drag while holding the tool button.</summary>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event data.</param>
+        private void OnCursorMoved(object sender, CursorMovedEventArgs e)
+        {
+            if (heldButton == SButton.None)
+                return;
+            
+            if (Helper.Input.IsDown(heldButton)) // Dragging mouse while holding tool button should update click location
+            {
+                specialClickLocation = Utility.ModifyCoordinatesFromUIScale(e.NewPosition.ScreenPixels);
+                specialClickLocation.X += Game1.viewport.X;
+                specialClickLocation.Y += Game1.viewport.Y;
+            }
+            else // Once you let go, don't update position unless you press tool button again
+                heldButton = SButton.None;
         }
         
         /// <summary>Checks whether the given Farmer and mouse position are within extended range for the current tool.</summary>
@@ -259,29 +275,27 @@ namespace RangedTools
          ** Method Patches **
          ********************/
         
-        /// <summary>Prefix to Farmer.useTool that overrides GetToolLocation with click location when specialClick is set.</summary>
+        /// <summary>Prefix to Farmer.useTool that overrides GetToolLocation with click location.</summary>
         /// <param name="who">The Farmer using the tool.</param>
         public static bool Prefix_useTool(Farmer who)
         {
             try
             {
-                if (specialClick) // Override set by earlier click
+                if (who.toolOverrideFunction == null)
                 {
-                    if (who.toolOverrideFunction == null)
-                    {
-                        if (who.CurrentTool == null)
-                            return true; // Go to original function (where it should just terminate due to tool being null, but still)
-                        float stamina = who.stamina;
-                        specialClick = false;
-                        if (who.IsLocalPlayer)
-                            who.CurrentTool.DoFunction(who.currentLocation, (int)ModEntry.specialClickLocation.X, (int)ModEntry.specialClickLocation.Y, 1, who);
-                        
-                        // Usual post-DoFunction checks from original
-                        who.lastClick = Vector2.Zero;
-                        who.checkForExhaustion(stamina);
-                        Game1.toolHold = 0.0f;
-                        return false; // Don't do original function anymore
-                    }
+                    if (who.CurrentTool == null)
+                        return true; // Go to original function (where it should just terminate due to tool being null, but still)
+                    if (who.toolPower > 0 && !Config.AllowRangedChargeEffects)
+                        return true; // Go to original function
+                    float stamina = who.stamina;
+                    if (who.IsLocalPlayer)
+                        who.CurrentTool.DoFunction(who.currentLocation, (int)ModEntry.specialClickLocation.X, (int)ModEntry.specialClickLocation.Y, 1, who);
+                    
+                    // Usual post-DoFunction checks from original
+                    who.lastClick = Vector2.Zero;
+                    who.checkForExhaustion(stamina);
+                    Game1.toolHold = 0.0f;
+                    return false; // Don't do original function anymore
                 }
                 return true; // Go to original function
             }

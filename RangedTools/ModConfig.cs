@@ -18,6 +18,7 @@
         
         public int ToolHitLocationDisplay { get; set; } = 1;
         
+        public bool AllowRangedChargeEffects { get; set; } = false;
         public bool CustomRangeOnClickOnly { get; set; } = true;
     }
 }
