@@ -7,7 +7,7 @@ Playing with mouse controls, but find it annoying walking up to things just to g
 
 Note that this extended range is generally **only applied when mouse-clicking**, and things will otherwise work as usual. This mod is thus mainly intended for **mouse and keyboard** play, where you have a free-moving cursor. I don't currently plan on adding any sort of "controller support."
 
-Also, nothing else about your tools is affected. They still use the same animation, consume the usual amount of stamina, and can be upgraded as normal. Charged tool functionality is also unaffected.
+Also, nothing else about your tools is affected. They still use the same animation, consume the usual amount of stamina, and can be upgraded as normal.
 
 ## Installation
 
@@ -44,9 +44,12 @@ Makes your farmer face toward the cursor when you click to use a tool or melee w
 **ToolHitLocationDisplay (0, 1, or 2)**
 Affects how the Tool Hit Location display is determined (only when that game option is enabled).
 
-**0 (original logic):** Indicates the targeted tile according to the base game ranges. (This will also be the starting tile for charged tool usage.)
+**0 (original logic):** Indicates the targeted tile according to the base game ranges.
 **1 (new logic, default):** Indicates the targeted tile taking into account extended ranges.
-**2 (combination):** Indicates both of the above.
+**2 (combination):** Indicates both of the above. May be desirable to know what will be targeted should the cursor go beyond the custom range.
+
+**AllowRangedChargeEffects (true or false)**
+Whether to use the custom range for charged tool use as well. If enabled (true), charge effects will activate starting from the tile the cursor is over when you release the button. (At least currently, the charge-up animation does not reflect this.) If disabled, they will always start from your farmer, like normal.
 
 **CustomRangeOnClickOnly (true or false)**
 
