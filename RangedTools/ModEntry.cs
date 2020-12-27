@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Harmony;
 using Microsoft.Xna.Framework;
@@ -17,10 +18,12 @@ namespace RangedTools
     public class ModEntry : Mod
     {
         private static IMonitor myMonitor;
+        private static IInputHelper myInput;
         private static ModConfig Config;
         
+        public static bool specialClickActive = false;
         public static Vector2 specialClickLocation = Vector2.Zero;
-        public static SButton heldButton = SButton.None;
+        public static List<SButton> knownToolButtons = new List<SButton>();
         
         public static bool eventUpReset = false;
         public static bool eventUpOld = false;
@@ -36,6 +39,7 @@ namespace RangedTools
             try
             {
                 myMonitor = this.Monitor;
+                myInput = this.Helper.Input;
                 Config = this.Helper.ReadConfig<ModConfig>();
                 
                 helper.Events.Input.ButtonPressed += this.OnButtonPressed;
@@ -130,7 +134,7 @@ namespace RangedTools
          ** Input Method **
          ******************/
         
-        /// <summary>Checks whether to set ToolLocation override when Tool Button is pressed.</summary>
+        /// <summary>Checks whether to enable ToolLocation override when a Tool Button is pressed.</summary>
         /// <param name="sender">The event sender.</param>
         /// <param name="e">The event data.</param>
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
@@ -149,12 +153,10 @@ namespace RangedTools
                 if (e.Button.IsUseToolButton() && (withClick || !Config.CustomRangeOnClickOnly))
                 {
                     Farmer player = Game1.player;
-                    Vector2 mousePosition = Utility.ModifyCoordinatesFromUIScale(e.Cursor.ScreenPixels);
-                    mousePosition.X += Game1.viewport.X;
-                    mousePosition.Y += Game1.viewport.Y;
-                    
                     if (player.CurrentTool != null && !player.UsingTool) // Have a tool selected, not in the middle of using it
                     {
+                        Vector2 mousePosition = convertCursorPosition(e.Cursor);
+                        
                         // If setting is enabled, face all mouse clicks when a tool/weapon is equipped.
                         if (withClick && shouldToolTurnToFace(player.CurrentTool))
                             player.faceGeneralDirection(mousePosition);
@@ -162,8 +164,10 @@ namespace RangedTools
                         if (positionValidForExtendedRange(player, mousePosition))
                         {
                             // Set this as an override location once tool is used.
+                            specialClickActive = true;
                             specialClickLocation = mousePosition;
-                            heldButton = e.Button;
+                            if (!knownToolButtons.Contains(e.Button))
+                                knownToolButtons.Add(e.Button);
                         }
                     }
                 }
@@ -174,22 +178,30 @@ namespace RangedTools
             }
         }
         
-        /// <summary>Checks for mouse drag while holding the tool button.</summary>
+        /// <summary>Checks for mouse drag while holding any Tool Button.</summary>
         /// <param name="sender">The event sender.</param>
         /// <param name="e">The event data.</param>
         private void OnCursorMoved(object sender, CursorMovedEventArgs e)
         {
-            if (heldButton == SButton.None)
-                return;
-            
-            if (Helper.Input.IsDown(heldButton)) // Dragging mouse while holding tool button should update click location
+            try
             {
-                specialClickLocation = Utility.ModifyCoordinatesFromUIScale(e.NewPosition.ScreenPixels);
-                specialClickLocation.X += Game1.viewport.X;
-                specialClickLocation.Y += Game1.viewport.Y;
+                if (holdingToolButton()) // Update override location as long as a tool button is held
+                    specialClickLocation = convertCursorPosition(e.NewPosition);
             }
-            else // Once you let go, don't update position unless you press tool button again
-                heldButton = SButton.None;
+            catch (Exception ex)
+            {
+                Log("Error in cursor move: " + ex.Message + Environment.NewLine + ex.StackTrace);
+            }
+        }
+        
+        /// <summary>Returns Vector2 global coordinates of mouse position, adjusted for scale.</summary>
+        /// <param name="cursor">The cursor position data.</param>
+        public static Vector2 convertCursorPosition(ICursorPosition cursor)
+        {
+            Vector2 mousePosition = Utility.ModifyCoordinatesFromUIScale(cursor.ScreenPixels);
+            mousePosition.X += Game1.viewport.X;
+            mousePosition.Y += Game1.viewport.Y;
+            return mousePosition;
         }
         
         /// <summary>Checks whether the given Farmer and mouse position are within extended range for the current tool.</summary>
@@ -213,6 +225,16 @@ namespace RangedTools
                         return true;
                 }
             }
+            
+            return false;
+        }
+        
+        /// <summary>Returns whether a known tool button is still being held.</summary>
+        public static bool holdingToolButton()
+        {
+            foreach (SButton button in knownToolButtons)
+                if (myInput.IsDown(button) && button.IsUseToolButton()) // Double-check in case it changed
+                    return true;
             
             return false;
         }
@@ -281,21 +303,31 @@ namespace RangedTools
         {
             try
             {
-                if (who.toolOverrideFunction == null)
+                if (holdingToolButton()) // As long as a Tool Button is being held, override should be used
+                    specialClickActive = true;
+                
+                if (specialClickActive)
                 {
-                    if (who.CurrentTool == null)
-                        return true; // Go to original function (where it should just terminate due to tool being null, but still)
-                    if (who.toolPower > 0 && !Config.AllowRangedChargeEffects)
-                        return true; // Go to original function
-                    float stamina = who.stamina;
-                    if (who.IsLocalPlayer)
-                        who.CurrentTool.DoFunction(who.currentLocation, (int)ModEntry.specialClickLocation.X, (int)ModEntry.specialClickLocation.Y, 1, who);
-                    
-                    // Usual post-DoFunction checks from original
-                    who.lastClick = Vector2.Zero;
-                    who.checkForExhaustion(stamina);
-                    Game1.toolHold = 0.0f;
-                    return false; // Don't do original function anymore
+                    if (who.toolOverrideFunction == null)
+                    {
+                        if (who.CurrentTool == null)
+                            return true; // Go to original function (where it should just terminate due to tool being null, but still)
+                        if (who.toolPower > 0 && !Config.AllowRangedChargeEffects)
+                            return true; // Go to original function
+                        float stamina = who.stamina;
+                        if (who.IsLocalPlayer)
+                        {
+                            who.CurrentTool.DoFunction(who.currentLocation, (int)ModEntry.specialClickLocation.X, (int)ModEntry.specialClickLocation.Y, 1, who);
+                            if (!holdingToolButton()) // Performed action, and button has been let go, so don't use override anymore
+                                specialClickActive = false;
+                        }
+                        
+                        // Usual post-DoFunction checks from original
+                        who.lastClick = Vector2.Zero;
+                        who.checkForExhaustion(stamina);
+                        Game1.toolHold = 0.0f;
+                        return false; // Don't do original function anymore
+                    }
                 }
                 return true; // Go to original function
             }
