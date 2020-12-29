@@ -247,6 +247,7 @@ namespace RangedTools
                 && !Game1.eventUp
                 && !Game1.menuUp
                 && Game1.currentMinigame == null
+                && !Game1.player.hasMenuOpen
                 && !Game1.player.isRidingHorse()
                 && (Game1.CurrentEvent == null || Game1.CurrentEvent.canPlayerUseTool());
         }
