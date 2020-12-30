@@ -42,13 +42,17 @@ In the base game (or with false setting), you cannot use a tool on the tile you'
 Makes your farmer face toward the cursor when you click to use a tool or melee weapon respectively, even if you click outside the range. You may find this more natural, especially for melee weapons, as you'll at least use the tool/weapon in the general cardinal direction you clicked in.
 
 **ToolHitLocationDisplay (0, 1, or 2)**
+
 Affects how the Tool Hit Location display is determined (only when that game option is enabled).
 
 **0 (original logic):** Indicates the targeted tile according to the base game ranges.
+
 **1 (new logic, default):** Indicates the targeted tile taking into account extended ranges.
+
 **2 (combination):** Indicates both of the above. May be desirable to know what will be targeted should the cursor go beyond the custom range.
 
 **AllowRangedChargeEffects (true or false)**
+
 Whether to use the custom range for charged tool use as well. If enabled (true), charge effects will activate starting from the tile the cursor is over when you release the button. (At least currently, the charge-up animation does not reflect this.) If disabled, they will always start from your farmer, like normal.
 
 **CustomRangeOnClickOnly (true or false)**
