@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
-using HarmonyLib;
+﻿using HarmonyLib;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -11,6 +8,9 @@ using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.TerrainFeatures;
 using StardewValley.Tools;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace RangedTools
 {
@@ -68,17 +68,14 @@ namespace RangedTools
                              typeof(ModEntry), nameof(ModEntry.Postfix_draw),
                              new Type[] { typeof(SpriteBatch) });
                 
-                if (helper.ModRegistry.IsLoaded("furyx639.ExpandedStorage")) // Additional methods to fix Expanded Storage conflict
-                {
-                    patchPrefix(harmonyInstance, typeof(Utility), nameof(Utility.playerCanPlaceItemHere),
-                                typeof(ModEntry), nameof(ModEntry.Prefix_playerCanPlaceItemHere));
-                    
-                    patchPostfix(harmonyInstance, typeof(Utility), nameof(Utility.playerCanPlaceItemHere),
-                                 typeof(ModEntry), nameof(ModEntry.Postfix_playerCanPlaceItemHere));
-                    
-                    patchPrefix(harmonyInstance, typeof(Utility), nameof(Utility.withinRadiusOfPlayer),
-                                typeof(ModEntry), nameof(ModEntry.Prefix_withinRadiusOfPlayer));
-                }
+                patchPrefix(harmonyInstance, typeof(Utility), nameof(Utility.playerCanPlaceItemHere),
+                            typeof(ModEntry), nameof(ModEntry.Prefix_playerCanPlaceItemHere));
+                
+                patchPostfix(harmonyInstance, typeof(Utility), nameof(Utility.playerCanPlaceItemHere),
+                                typeof(ModEntry), nameof(ModEntry.Postfix_playerCanPlaceItemHere));
+                
+                patchPrefix(harmonyInstance, typeof(Utility), nameof(Utility.withinRadiusOfPlayer),
+                            typeof(ModEntry), nameof(ModEntry.Prefix_withinRadiusOfPlayer));
             }
             catch (Exception e)
             {
@@ -675,8 +672,8 @@ namespace RangedTools
             }
         }
         
-        /// <summary>Prefix to Utility.playerCanPlaceItemHere used if Extended Storage is installed.
-        /// Extended Storage has a postfix to this method that uses withinRadiusOfPlayer, so this sets an override for it.</summary>
+        /// <summary>Prefix to Utility.playerCanPlaceItemHere to aid in mod compatibility.
+        /// Some methods add postfixes to use withinRadiusOfPlayer, so this sets an override for it.</summary>
         /// <param name="location">The location being tested.</param>
         /// <param name="item">The object being tested.</param>
         /// <param name="x">The X position.</param>
