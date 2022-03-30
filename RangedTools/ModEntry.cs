@@ -28,6 +28,7 @@ namespace RangedTools
         
         public static bool eventUpReset = false;
         public static bool eventUpOld = false;
+        public static bool farmerLocationOverride = false;
         public static int tileRadiusOverride = 0;
         
         /***************************
@@ -76,6 +77,9 @@ namespace RangedTools
                 
                 patchPrefix(harmonyInstance, typeof(Utility), nameof(Utility.withinRadiusOfPlayer),
                             typeof(ModEntry), nameof(ModEntry.Prefix_withinRadiusOfPlayer));
+                
+                patchPrefix(harmonyInstance, typeof(Character), nameof(Character.getTileLocation),
+                            typeof(ModEntry), nameof(ModEntry.Prefix_getTileLocation));
             }
             catch (Exception e)
             {
@@ -473,7 +477,7 @@ namespace RangedTools
                  : 1;
         }
        
-        /// <summary>Returns "usable on player tile" setting for overridable tools (1 for any others).</summary>
+        /// <summary>Returns "usable on player tile" setting for overridable tools (true for any others).</summary>
         /// <param name="tool">The Tool being checked.</param>
         public static bool getPlayerTileSetting(Tool tool)
         {
@@ -511,8 +515,10 @@ namespace RangedTools
                         float stamina = who.stamina; // From original function
                         if (who.IsLocalPlayer) // From original function
                         {
+                            farmerLocationOverride = true; // Temporarily override Farmer's location to be at click location
                             // Call DoFunction like original function, but on the override location
                             who.CurrentTool.DoFunction(who.currentLocation, (int)specialClickLocation.X, (int)specialClickLocation.Y, 1, who);
+                            farmerLocationOverride = false;
                             if (!holdingToolButton()) // Performed action, and button has been let go, so don't use override anymore
                                 specialClickActive = false;
                         }
@@ -726,6 +732,26 @@ namespace RangedTools
             catch (Exception e)
             {
                 Log("Error in withinRadiusOfPlayer: " + e.Message + Environment.NewLine + e.StackTrace);
+                return true; // Go to original function
+            }
+        }
+        
+        /// <summary>Prefix to Character.getTileLocation to override Farmer's base location for some mod compatibility.</summary>
+        /// <param name="__result">The result of the function.</param>
+        public static bool Prefix_getTileLocation(ref Character __instance, ref Vector2 __result)
+        {
+            try
+            {
+                if (farmerLocationOverride && __instance is Farmer && specialClickActive)
+                {
+                    __result = new Vector2(specialClickLocation.X / 64, specialClickLocation.Y / 64);
+                    return false; // Don't do original function anymore
+                }
+                return true; // Go to original function
+            }
+            catch (Exception e)
+            {
+                Log("Error in getTileLocation: " + e.Message + Environment.NewLine + e.StackTrace);
                 return true; // Go to original function
             }
         }
