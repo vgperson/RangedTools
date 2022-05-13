@@ -6,6 +6,7 @@ using Netcode;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Menus;
 using StardewValley.TerrainFeatures;
 using StardewValley.Tools;
 using System;
@@ -29,6 +30,8 @@ namespace RangedTools
         public static bool disableToolLocationOverride = false;
         public static bool eventUpReset = false;
         public static bool eventUpOld = false;
+        public static bool activeMenuReset = false;
+        public static ChatBox placeholderMenu = new ChatBox();
         public static int tileRadiusOverride = 0;
         
         /***************************
@@ -684,25 +687,33 @@ namespace RangedTools
                         {
                             drawnExtended = true;
                             b.Draw(Game1.mouseCursors, extendedLocal,
-                                    new Rectangle?(Game1.getSourceRectForStandardTileSheet(Game1.mouseCursors, 29)),
-                                    Color.White, 0.0f, Vector2.Zero, 1f, SpriteEffects.None, extendedLocal.Y / 10000f);
+                                   new Rectangle?(Game1.getSourceRectForStandardTileSheet(Game1.mouseCursors, 29)),
+                                   Color.White, 0.0f, Vector2.Zero, 1f, SpriteEffects.None, extendedLocal.Y / 10000f);
                         }
                     }
                     
                     if (!drawnExtended || !extendedLocal.Equals(limitedLocal)) // Don't draw in same position twice
                     {
                         if (!drawnExtended // Always draw original if extended position wasn't valid
-                            || Config.ToolHitLocationDisplay == 0 || Config.ToolHitLocationDisplay == 2) // Old Logic or Combined
+                         || Config.ToolHitLocationDisplay == 0 || Config.ToolHitLocationDisplay == 2) // Old Logic or Combined
                         {
                             b.Draw(Game1.mouseCursors, limitedLocal,
-                                    new Rectangle?(Game1.getSourceRectForStandardTileSheet(Game1.mouseCursors, 29)),
-                                    Color.White, 0.0f, Vector2.Zero, 1f, SpriteEffects.None, limitedLocal.Y / 10000f);
+                                   new Rectangle?(Game1.getSourceRectForStandardTileSheet(Game1.mouseCursors, 29)),
+                                   Color.White, 0.0f, Vector2.Zero, 1f, SpriteEffects.None, limitedLocal.Y / 10000f);
                         }
                     }
                     
-                    eventUpOld = Game1.eventUp;
-                    Game1.eventUp = true; // Temporarily set this to disable original drawing of indicator
-                    eventUpReset = true; // Make sure it's set back to original value in the postfix
+                    if (!__instance.isRidingHorse()) // Setting eventUp when riding horse causes this to return false and not draw horse
+                    {
+                        eventUpOld = Game1.eventUp;
+                        Game1.eventUp = true; // Temporarily set this to disable original drawing of indicator
+                        eventUpReset = true; // Make sure it's set back to original value in the postfix
+                    }
+                    else if (Game1.activeClickableMenu == null) // Alternative disabling method for when riding horse
+                    { 
+                        Game1.activeClickableMenu = placeholderMenu; // Temporarily set this to prevent original draiwng of indicator
+                        activeMenuReset = true; // Make sure it's set back to original value in the postfix
+                    }
                 }
                 return true; // Go to original function
             }
@@ -713,13 +724,18 @@ namespace RangedTools
             }
         }
         
-        /// <summary>Postfix to Farmer.draw that resets eventUp to what it was.</summary>
+        /// <summary>Postfix to Farmer.draw that reverts any variables changed for the sake of disabling tool indicator.</summary>
         public static void Postfix_draw()
         {
             if (eventUpReset)
             {
                 Game1.eventUp = eventUpOld;
                 eventUpReset = false;
+            }
+            if (activeMenuReset)
+            {
+                Game1.activeClickableMenu = null;
+                activeMenuReset = false;
             }
         }
         
