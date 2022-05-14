@@ -6,7 +6,6 @@ using Netcode;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
-using StardewValley.Menus;
 using StardewValley.TerrainFeatures;
 using StardewValley.Tools;
 using System;
@@ -28,11 +27,11 @@ namespace RangedTools
         public static List<SButton> knownToolButtons = new List<SButton>();
         
         public static bool disableToolLocationOverride = false;
-        public static bool eventUpReset = false;
-        public static bool eventUpOld = false;
-        public static bool activeMenuReset = false;
-        public static ChatBox placeholderMenu = new ChatBox();
         public static int tileRadiusOverride = 0;
+        
+        public static bool preventDraw = false;
+        public static Texture2D preventDrawTexture;
+        public static Rectangle? preventDrawSourceRect;
         
         /***************************
          ** Mod Injection Methods **
@@ -72,12 +71,17 @@ namespace RangedTools
                             typeof(ModEntry), nameof(ModEntry.Prefix_pressUseToolButton));
                 
                 patchPrefix(harmonyInstance, typeof(Farmer), nameof(Farmer.draw),
-                            typeof(ModEntry), nameof(ModEntry.Prefix_draw),
+                            typeof(ModEntry), nameof(ModEntry.Prefix_Farmer_draw),
                             new Type[] { typeof(SpriteBatch) });
                 
                 patchPostfix(harmonyInstance, typeof(Farmer), nameof(Farmer.draw),
-                             typeof(ModEntry), nameof(ModEntry.Postfix_draw),
+                             typeof(ModEntry), nameof(ModEntry.Postfix_Farmer_draw),
                              new Type[] { typeof(SpriteBatch) });
+                
+                patchPrefix(harmonyInstance, typeof(SpriteBatch), nameof(SpriteBatch.Draw),
+                            typeof(ModEntry), nameof(ModEntry.Prefix_SpriteBatch_Draw),
+                            new Type[] { typeof(Texture2D), typeof(Vector2), typeof(Rectangle?), typeof(Color),
+                                typeof(float), typeof(Vector2), typeof(Vector2), typeof(SpriteEffects), typeof(float) });
                 
                 patchPrefix(harmonyInstance, typeof(Utility), nameof(Utility.playerCanPlaceItemHere),
                             typeof(ModEntry), nameof(ModEntry.Prefix_playerCanPlaceItemHere));
@@ -641,10 +645,10 @@ namespace RangedTools
             }
         }
         
-        /// <summary>Prefix to Farmer.draw that draws tool hit location at extended ranges.</summary>
+        /// <summary>Prefix to Farmer.draw that takes over drawing of Tool Hit Location indicator.</summary>
         /// <param name="__instance">The instance of the Farmer.</param>
         /// <param name="b">The sprite batch.</param>
-        public static bool Prefix_draw(Farmer __instance, SpriteBatch b)
+        public static bool Prefix_Farmer_draw(Farmer __instance, SpriteBatch b)
         {
             try
             {
@@ -683,7 +687,7 @@ namespace RangedTools
                     bool drawnExtended = false;
                     if (Config.ToolHitLocationDisplay == 1 || Config.ToolHitLocationDisplay == 2) // New Logic or Combined
                     {
-                        if (positionValidForExtendedRange(__instance, mousePosition))
+                        if (positionValidForExtendedRange(__instance, mousePosition)) // Only draw at this range if it's valid
                         {
                             drawnExtended = true;
                             b.Draw(Game1.mouseCursors, extendedLocal,
@@ -703,17 +707,10 @@ namespace RangedTools
                         }
                     }
                     
-                    if (!__instance.isRidingHorse()) // Setting eventUp when riding horse causes this to return false and not draw horse
-                    {
-                        eventUpOld = Game1.eventUp;
-                        Game1.eventUp = true; // Temporarily set this to disable original drawing of indicator
-                        eventUpReset = true; // Make sure it's set back to original value in the postfix
-                    }
-                    else if (Game1.activeClickableMenu == null) // Alternative disabling method for when riding horse
-                    { 
-                        Game1.activeClickableMenu = placeholderMenu; // Temporarily set this to prevent original draiwng of indicator
-                        activeMenuReset = true; // Make sure it's set back to original value in the postfix
-                    }
+                    // Specifically prevent drawing of original indicator by SpriteBatch.Draw().
+                    preventDraw = true;
+                    preventDrawTexture = Game1.mouseCursors;
+                    preventDrawSourceRect = new Rectangle?(Game1.getSourceRectForStandardTileSheet(Game1.mouseCursors, 29));
                 }
                 return true; // Go to original function
             }
@@ -724,18 +721,37 @@ namespace RangedTools
             }
         }
         
-        /// <summary>Postfix to Farmer.draw that reverts any variables changed for the sake of disabling tool indicator.</summary>
-        public static void Postfix_draw()
+        /// <summary>Postfix to Farmer.draw that resets preventDraw override.</summary>
+        public static void Postfix_Farmer_draw()
         {
-            if (eventUpReset)
+            preventDraw = false;
+        }
+        
+        /// <summary>Prefix to SpriteBatch.Draw that cancels it (when enabled) if arguments match the established parameters.</summary>
+        /// <param name="__instance">The instance of the SpriteBatch.</param>
+        /// <param name="texture">The base texture.</param>
+        /// <param name="position">The position to draw at.</param>
+        /// <param name="sourceRectangle">The area of the texture to use.</param>
+        /// <param name="color">The color to draw with.</param>
+        /// <param name="rotation">The rotation to draw with.</param>
+        /// <param name="origin">The origin point.</param>
+        /// <param name="scale">The scale to draw at.</param>
+        /// <param name="effects">Effects to draw with.</param>
+        /// <param name="layerDepth">Depth to draw at.</param>
+        public static bool Prefix_SpriteBatch_Draw(SpriteBatch __instance, Texture2D texture, Vector2 position, Rectangle? sourceRectangle,
+            Color color, float rotation, Vector2 origin, Vector2 scale, SpriteEffects effects, float layerDepth)
+        {
+            try
             {
-                Game1.eventUp = eventUpOld;
-                eventUpReset = false;
+                if (preventDraw && preventDrawTexture.Equals(texture) && preventDrawSourceRect.Equals(sourceRectangle))
+                    return false; // Don't do original function anymore
+                
+                return true; // Go to original function
             }
-            if (activeMenuReset)
+            catch (Exception e)
             {
-                Game1.activeClickableMenu = null;
-                activeMenuReset = false;
+                Log("Error in SpriteBatch Draw: " + e.Message + Environment.NewLine + e.StackTrace);
+                return true; // Go to original function
             }
         }
         
