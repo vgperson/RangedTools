@@ -6,6 +6,7 @@ using Netcode;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Monsters;
 using StardewValley.TerrainFeatures;
 using StardewValley.Tools;
 using System;
@@ -91,6 +92,15 @@ namespace RangedTools
                 
                 patchPrefix(harmonyInstance, typeof(Utility), nameof(Utility.withinRadiusOfPlayer),
                             typeof(ModEntry), nameof(ModEntry.Prefix_withinRadiusOfPlayer));
+                
+                patchPostfix(harmonyInstance, typeof(MeleeWeapon), nameof(MeleeWeapon.getAreaOfEffect),
+                             typeof(ModEntry), nameof(ModEntry.Postfix_getAreaOfEffect));
+                
+                patchPostfix(harmonyInstance, typeof(MeleeWeapon), nameof(MeleeWeapon.DoDamage),
+                             typeof(ModEntry), nameof(ModEntry.Postfix_DoDamage));
+                
+                patchPrefix(harmonyInstance, typeof(GameLocation), "isMonsterDamageApplicable",
+                            typeof(ModEntry), nameof(ModEntry.Prefix_isMonsterDamageApplicable));
                 
                 if (helper.ModRegistry.IsLoaded("Thor.HoeWaterDirection"))
                 {
@@ -205,7 +215,7 @@ namespace RangedTools
                 for (int i = 2; i <= 20; i++)
                     rangeList.Add(i.ToString());
                 
-                foreach (string subject in new string[] { "axe", "pickaxe", "hoe", "wateringCan", "seeds", "objects" })
+                foreach (string subject in new string[] { "axe", "pickaxe", "hoe", "wateringCan", "scythe", "weapons", "seeds", "objects" })
                 {
                     configMenu.AddTextOption(
                         mod: ModManifest,
@@ -220,6 +230,8 @@ namespace RangedTools
                                 case "pickaxe": value = Config.PickaxeRange; break;
                                 case "hoe": value = Config.HoeRange; break;
                                 case "wateringCan": value = Config.WateringCanRange; break;
+                                case "scythe": value = Config.ScytheRange; break;
+                                case "weapons": value = Config.WeaponRange; break;
                                 case "seeds": value = Config.SeedRange; break;
                                 case "objects": value = Config.ObjectPlaceRange; break;
                             }
@@ -252,6 +264,8 @@ namespace RangedTools
                                 case "pickaxe": Config.PickaxeRange = value; break;
                                 case "hoe": Config.HoeRange = value; break;
                                 case "wateringCan": Config.WateringCanRange = value; break;
+                                case "scythe": Config.ScytheRange = value; break;
+                                case "weapons": Config.WeaponRange = value; break;
                                 case "seeds": Config.SeedRange = value; break;
                                 case "objects": Config.ObjectPlaceRange = value; break;
                             }
@@ -268,6 +282,24 @@ namespace RangedTools
                         }
                     );
                 }
+                
+                configMenu.AddSectionTitle(mod: ModManifest, text: () => str.Get("headerRangedSwings"));
+                
+                configMenu.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => str.Get("optionScytheSwingOriginName"),
+                    tooltip: () => str.Get("optionScytheSwingOriginTooltip"),
+                    getValue: () => Config.CenterScytheOnCursor,
+                    setValue: value => Config.CenterScytheOnCursor = value
+                );
+                
+                configMenu.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => str.Get("optionWeaponSwingOriginName"),
+                    tooltip: () => str.Get("optionWeaponSwingOriginTooltip"),
+                    getValue: () => Config.CenterWeaponOnCursor,
+                    setValue: value => Config.CenterWeaponOnCursor = value
+                );
                 
                 configMenu.AddSectionTitle(mod: ModManifest, text: () => str.Get("headerUseOnTile"));
                 
@@ -343,6 +375,14 @@ namespace RangedTools
                     tooltip: () => str.Get("optionAllowRangedChargeTooltip"),
                     getValue: () => Config.AllowRangedChargeEffects,
                     setValue: value => Config.AllowRangedChargeEffects = value
+                );
+                
+                configMenu.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => str.Get("optionAttacksIgnoreObstaclesName"),
+                    tooltip: () => str.Get("optionAttacksIgnoreObstaclesTooltip"),
+                    getValue: () => Config.AttacksIgnoreObstacles,
+                    setValue: value => Config.AttacksIgnoreObstacles = value
                 );
                 
                 configMenu.AddBoolOption(
@@ -809,6 +849,109 @@ namespace RangedTools
             catch (Exception e)
             {
                 Log("Error in withinRadiusOfPlayer: " + e.Message + Environment.NewLine + e.StackTrace);
+                return true; // Go to original function
+            }
+        }
+        
+        /// <summary>Postfix to MeleeWeapon.getAreaOfEffect that alters effect area of scythes/melee weapons.</summary>
+        /// <param name="__result">Rectangle for the area of effect.</param>
+        /// <param name="x">Farmer X position.</param>
+        /// <param name="y">Farmer Y position.</param>
+        /// <param name="facingDirection">Farmer facing direction.</param>
+        /// <param name="tileLocation1">Central position in rectangle.</param>
+        /// <param name="tileLocation2">Central position in rectangle.</param>
+        /// <param name="wielderBoundingBox">Farmer bounds rectangle.</param>
+        /// <param name="indexInCurrentAnimation">Frame of tool/weapon use animation.</param>
+        public static void Postfix_getAreaOfEffect(MeleeWeapon __instance, ref Rectangle __result, int x, int y, int facingDirection,
+            ref Vector2 tileLocation1, ref Vector2 tileLocation2, Rectangle wielderBoundingBox, int indexInCurrentAnimation)
+        {
+            int myRange = __instance.isScythe()? Config.ScytheRange : Config.WeaponRange;
+            bool centerOnCursor = __instance.isScythe()? Config.CenterScytheOnCursor : Config.CenterWeaponOnCursor;
+            
+            if (myRange < 0) // Infinite
+            {
+                __result.X = 0;
+                __result.Y = 0;
+                __result.Width = Game1.currentLocation.map.DisplayWidth;
+                __result.Height = Game1.currentLocation.map.DisplayHeight;
+                return;
+            }
+            
+            if (myRange > 1)
+                __result.Inflate((myRange - 1) * 64, (myRange - 1) * 64);
+            
+            if (centerOnCursor)
+            {
+                Vector2 mousePosition = Utility.PointToVector2(Game1.getMousePosition()) 
+                                        + new Vector2((float)Game1.viewport.X, (float)Game1.viewport.Y);
+                __result.X = (int)mousePosition.X - __result.Width / 2;
+                __result.Y = (int)mousePosition.Y - __result.Height / 2;
+            }
+        }
+        
+        /// <summary>Postfix to MeleeWeapon.DoDamage to make scythe affect not just borders of rectangle, but anything inside it.</summary>
+        /// <param name="__instance">The MeleeWeapon object.</param>
+        /// <param name="location">Target location.</param>
+        /// <param name="x">Target X position.</param>
+        /// <param name="y">Target Y position.</param>
+        /// <param name="facingDirection">Farmer facing direction.</param>
+        /// <param name="power">Power of the attack.</param>
+        /// <param name="who">The attacking Farmer.</param>
+        public static void Postfix_DoDamage(MeleeWeapon __instance, GameLocation location, int x, int y, int facingDirection, int power, Farmer who)
+        {
+            int myRange = __instance.isScythe()? Config.ScytheRange : Config.WeaponRange;
+            if (myRange == 1) // Default behavior
+                return;
+            
+            if (!who.IsLocalPlayer)
+                return;
+            
+            Rectangle areaOfEffect = __instance.mostRecentArea;
+            List<Vector2> borderTiles = Utility.getListOfTileLocationsForBordersOfNonTileRectangle(areaOfEffect);
+            List<Vector2> nonBorderTiles = new List<Vector2>();
+            for (int i = 0; i < areaOfEffect.Width; i += 64)
+            {
+                for (int j = 0; j < areaOfEffect.Height; j += 64)
+                {
+                    Vector2 tile = new Vector2((float)((areaOfEffect.Left + i) / 64), (float)((areaOfEffect.Top + j) / 64));
+                    if (!borderTiles.Contains(tile))
+                        nonBorderTiles.Add(tile);
+                }
+            }
+            
+            string cueName = "";
+            foreach (Vector2 removeDuplicate in Utility.removeDuplicates(nonBorderTiles))
+            {
+                if (location.terrainFeatures.ContainsKey(removeDuplicate) && location.terrainFeatures[removeDuplicate].performToolAction((Tool)__instance, 0, removeDuplicate, location))
+                    location.terrainFeatures.Remove(removeDuplicate);
+                if (location.objects.ContainsKey(removeDuplicate) && location.objects[removeDuplicate].performToolAction((Tool)__instance, location))
+                    location.objects.Remove(removeDuplicate);
+                if (location.performToolAction((Tool)__instance, (int)removeDuplicate.X, (int)removeDuplicate.Y))
+                    break;
+            }
+            if (!cueName.Equals(""))
+                Game1.playSound(cueName);
+        }
+        
+        /// <summary>Prefix to GameLocation.isMonsterDamageApplicable that overrides it if the setting to ignore obstacles is enabled.</summary>
+        /// <param name="__instance">The current GameLocation.</param>
+        /// <param name="who">The attacking Farmer.</param>
+        /// <param name="monster">The monster in question.</param>
+        /// <param name="horizontalBias">Whether attack is more horizontal than vertical.</param>
+        public static bool Prefix_isMonsterDamageApplicable(GameLocation __instance, ref bool __result, Farmer who, Monster monster, bool horizontalBias = true)
+        {
+            try
+            {
+                if (Config.AttacksIgnoreObstacles)
+                {
+                    __result = true;
+                    return false; // Don't do original function anymore
+                }
+                return true; // Go to original function
+            }
+            catch (Exception e)
+            {
+                Log("Error in isMonsterDamageApplicable: " + e.Message + Environment.NewLine + e.StackTrace);
                 return true; // Go to original function
             }
         }

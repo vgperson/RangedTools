@@ -6,8 +6,13 @@
         public int PickaxeRange { get; set; } = 1;
         public int HoeRange { get; set; } = 1;
         public int WateringCanRange { get; set; } = 1;
+        public int ScytheRange { get; set; } = 1;
+        public int WeaponRange { get; set; } = 1;
         public int SeedRange { get; set; } = 1;
         public int ObjectPlaceRange { get; set; } = 1;
+        
+        public bool CenterScytheOnCursor { get; set; } = false;
+        public bool CenterWeaponOnCursor { get; set; } = false;
         
         public bool AxeUsableOnPlayerTile { get; set; } = false;
         public bool PickaxeUsableOnPlayerTile { get; set; } = true;
@@ -19,6 +24,7 @@
         public int ToolHitLocationDisplay { get; set; } = 1;
         
         public bool AllowRangedChargeEffects { get; set; } = false;
+        public bool AttacksIgnoreObstacles { get; set; } = false;
         public bool CustomRangeOnClickOnly { get; set; } = true;
     }
 }
