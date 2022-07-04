@@ -109,9 +109,9 @@ namespace RangedTools
                                  null, "Thor.Stardew.Mods.HoeWaterDirection.ModEntry:HandleChangeDirectoryImpl");
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Log("Error in mod setup: " + e.Message + Environment.NewLine + e.StackTrace);
+                Log("Error in mod setup: " + ex.Message + Environment.NewLine + ex.StackTrace);
             }
         }
         
@@ -145,9 +145,9 @@ namespace RangedTools
                         Log("Warning: Patch method (" + patchClass.ToString() + "::" + patchName + ") not found.");
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Log("Error in code patching: " + e.InnerException + Environment.NewLine + e.StackTrace);
+                Log("Error in code patching: " + ex.InnerException + Environment.NewLine + ex.StackTrace);
             }
         }
         
@@ -181,9 +181,9 @@ namespace RangedTools
                         Log("Warning: Patch method (" + patchClass.ToString() + "::" + patchName + ") not found.");
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Log("Error in code patching: " + e.InnerException + Environment.NewLine + e.StackTrace);
+                Log("Error in code patching: " + ex.InnerException + Environment.NewLine + ex.StackTrace);
             }
         }
         
@@ -393,10 +393,9 @@ namespace RangedTools
                     setValue: value => Config.CustomRangeOnClickOnly = value
                 );
             }
-            catch (Exception exception)
+            catch (Exception ex)
             {
-                Log("Error setting up mod config menu (menu may not appear): " + exception.InnerException
-                  + Environment.NewLine + exception.StackTrace);
+                Log("Error setting up mod config menu (menu may not appear): " + ex.InnerException + Environment.NewLine + ex.StackTrace);
             }
         }
         
@@ -583,9 +582,9 @@ namespace RangedTools
                 
                 return true; // Go to original function
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Log("Error in useTool: " + e.Message + Environment.NewLine + e.StackTrace);
+                Log("Error in useTool: " + ex.Message + Environment.NewLine + ex.StackTrace);
                 return true; // Go to original function
             }
         }
@@ -657,9 +656,9 @@ namespace RangedTools
                 }
                 return true; // Go to original function
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Log("Error in isWithinTileWithLeeway: " + e.Message + Environment.NewLine + e.StackTrace);
+                Log("Error in isWithinTileWithLeeway: " + ex.Message + Environment.NewLine + ex.StackTrace);
                 return true; // Go to original function
             }
         }
@@ -678,9 +677,9 @@ namespace RangedTools
                 
                 return true; // Go to original function
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Log("Error in pressUseToolButton: " + e.Message + Environment.NewLine + e.StackTrace);
+                Log("Error in pressUseToolButton: " + ex.Message + Environment.NewLine + ex.StackTrace);
                 return true; // Go to original function
             }
         }
@@ -754,9 +753,9 @@ namespace RangedTools
                 }
                 return true; // Go to original function
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Log("Error in Farmer draw: " + e.Message + Environment.NewLine + e.StackTrace);
+                Log("Error in Farmer draw: " + ex.Message + Environment.NewLine + ex.StackTrace);
                 return true; // Go to original function
             }
         }
@@ -788,9 +787,9 @@ namespace RangedTools
                 
                 return true; // Go to original function
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Log("Error in SpriteBatch Draw: " + e.Message + Environment.NewLine + e.StackTrace);
+                Log("Error in SpriteBatch Draw: " + ex.Message + Environment.NewLine + ex.StackTrace);
                 return true; // Go to original function
             }
         }
@@ -802,17 +801,20 @@ namespace RangedTools
         /// <param name="x">The X position.</param>
         /// <param name="y">The Y position.</param>
         /// <param name="f">The Farmer placing the object.</param>
-        public static void Prefix_playerCanPlaceItemHere(GameLocation location, Item item, int x, int y, Farmer f)
+        public static bool Prefix_playerCanPlaceItemHere(GameLocation location, Item item, int x, int y, Farmer f)
         {
             try
             {
                 tileRadiusOverride = item.Category == StardewValley.Object.SeedsCategory
                                   || item.Category == StardewValley.Object.fertilizerCategory? Config.SeedRange
                                                                                              : Config.ObjectPlaceRange;
+                
+                return true; // Go to original function
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Log("Error in playerCanPlaceItemHere: " + e.Message + Environment.NewLine + e.StackTrace);
+                Log("Error in playerCanPlaceItemHere: " + ex.Message + Environment.NewLine + ex.StackTrace);
+                return true; // Go to original function
             }
         }
         
@@ -846,9 +848,9 @@ namespace RangedTools
                 __result = (double)Math.Abs((float)point.X - tileLocation.X) <= (double)tileRadius && (double)Math.Abs((float)point.Y - tileLocation.Y) <= (double)tileRadius;
                 return false; // Don't do original function anymore
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Log("Error in withinRadiusOfPlayer: " + e.Message + Environment.NewLine + e.StackTrace);
+                Log("Error in withinRadiusOfPlayer: " + ex.Message + Environment.NewLine + ex.StackTrace);
                 return true; // Go to original function
             }
         }
@@ -907,28 +909,29 @@ namespace RangedTools
                 return;
             
             Rectangle areaOfEffect = __instance.mostRecentArea;
-            List<Vector2> borderTiles = Utility.getListOfTileLocationsForBordersOfNonTileRectangle(areaOfEffect);
-            List<Vector2> nonBorderTiles = new List<Vector2>();
-            for (int i = 0; i < areaOfEffect.Width; i += 64)
-            {
-                for (int j = 0; j < areaOfEffect.Height; j += 64)
-                {
-                    Vector2 tile = new Vector2((float)((areaOfEffect.Left + i) / 64), (float)((areaOfEffect.Top + j) / 64));
-                    if (!borderTiles.Contains(tile))
-                        nonBorderTiles.Add(tile);
-                }
-            }
             
             string cueName = "";
-            foreach (Vector2 removeDuplicate in Utility.removeDuplicates(nonBorderTiles))
+            
+            foreach (Vector2 terrainKey in location.terrainFeatures.Keys)
             {
-                if (location.terrainFeatures.ContainsKey(removeDuplicate) && location.terrainFeatures[removeDuplicate].performToolAction((Tool)__instance, 0, removeDuplicate, location))
-                    location.terrainFeatures.Remove(removeDuplicate);
-                if (location.objects.ContainsKey(removeDuplicate) && location.objects[removeDuplicate].performToolAction((Tool)__instance, location))
-                    location.objects.Remove(removeDuplicate);
-                if (location.performToolAction((Tool)__instance, (int)removeDuplicate.X, (int)removeDuplicate.Y))
-                    break;
+                if (myRange > 1 && !areaOfEffect.Contains(Vector2.Multiply(terrainKey, 64))) // Must be in effect range, unless range is infinite
+                    continue;
+                if (location.terrainFeatures[terrainKey].performToolAction((Tool)__instance, 0, terrainKey, location))
+                    location.terrainFeatures.Remove(terrainKey);
             }
+            
+            foreach (Vector2 objectKey in location.objects.Keys)
+            {
+                if (myRange > 1 && !areaOfEffect.Contains(Vector2.Multiply(objectKey, 64))) // Must be in effect range, unless range is infinite
+                    continue;
+                if (location.objects[objectKey].performToolAction((Tool)__instance, location))
+                    location.objects.Remove(objectKey);
+            }
+            
+            for (int tileX = areaOfEffect.Left; tileX < areaOfEffect.Right; tileX += 64)
+                for (int tileY = areaOfEffect.Top; tileY < areaOfEffect.Bottom; tileY += 64)
+                    location.performToolAction((Tool)__instance, tileX / 64, tileY / 64);
+            
             if (!cueName.Equals(""))
                 Game1.playSound(cueName);
         }
@@ -949,9 +952,9 @@ namespace RangedTools
                 }
                 return true; // Go to original function
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Log("Error in isMonsterDamageApplicable: " + e.Message + Environment.NewLine + e.StackTrace);
+                Log("Error in isMonsterDamageApplicable: " + ex.Message + Environment.NewLine + ex.StackTrace);
                 return true; // Go to original function
             }
         }
