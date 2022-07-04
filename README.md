@@ -35,7 +35,7 @@ Same as the tool ranges above, but for the scythe and melee weapons.
 
 These work a bit differently from the single-tile-target tools above, with a dynamic hitbox that changes over the course of the animation. So instead, this considers the default hitboxes as having a "1 tile" range, and on higher settings, expands that hitbox out in all directions. This does not account for the direction you face, so the hitbox will also be expanded behind the player.
 
-Setting these ranges to -1 removes all range restrictions, hitting all tiles on the map. Take note that this may result in lag when swinging scythes or weapons on large maps (even if there is nothing left to cut), so it's generally recommended you just use a high range value instead.
+Setting these ranges to -1 removes all range restrictions, hitting all tiles on the map. Note that this may cause some lag if many objects are hit at once.
 
 **SeedRange / ObjectPlaceRange (1 or greater, -1 for unlimited range)**
 
