@@ -63,6 +63,9 @@
 	"locationLogicNew": "Нова логіка (за замовч.)",
 	"locationLogicCombined": "Комбінація",
 	
+	"optionHalfTilePositionsName": "Use Half-Tile Positions", // todo
+	"optionHalfTilePositionsTooltip": "Alters range calculation so that when player is standing \"between\" tile units, range feels more equal on all sides.", // todo
+	
 	"optionAllowRangedChargeName": "Дозволити розширення діапазонів",
 	"optionAllowRangedChargeTooltip": "Дозволяє розширювати діапазони дії інструмента, які виникатимуть із позиції курсора, а не від гравця.",
 	

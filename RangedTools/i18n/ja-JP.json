@@ -63,6 +63,9 @@
 	"locationLogicNew": "カスタム範囲表示（おススメ）",
 	"locationLogicCombined": "どっちも表示",
 	
+	"optionHalfTilePositionsName": "半マスの範囲算出方法",
+	"optionHalfTilePositionsTooltip": "範囲算出の変更で、プレイヤーがマスとマスの間にいる時にも、どの方向でも範囲が同じくらいになる。",
+	
 	"optionAllowRangedChargeName": "遠くチャージ使用",
 	"optionAllowRangedChargeTooltip": "普通より遠く距離でもツールのチャージ行動が使える。この場合、プレイヤーじゃなくてカーソル位置から出ます。",
 	

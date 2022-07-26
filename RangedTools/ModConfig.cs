@@ -23,6 +23,7 @@
         
         public int ToolHitLocationDisplay { get; set; } = 1;
         
+        public bool UseHalfTilePositions { get; set; } = true;
         public bool AllowRangedChargeEffects { get; set; } = false;
         public bool AttacksIgnoreObstacles { get; set; } = false;
         public bool CustomRangeOnClickOnly { get; set; } = true;

@@ -63,6 +63,9 @@
 	"locationLogicNew": "New Logic (default)",
 	"locationLogicCombined": "Combination",
 	
+	"optionHalfTilePositionsName": "Use Half-Tile Positions",
+	"optionHalfTilePositionsTooltip": "Alters range calculation so that when player is standing \"between\" tile units, range feels more equal on all sides.",
+	
 	"optionAllowRangedChargeName": "Allow Ranged Charge Effects",
 	"optionAllowRangedChargeTooltip": "Allows charged tool actions at extended ranges, which will originate from the cursor position instead of the player.",
 	

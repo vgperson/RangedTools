@@ -371,6 +371,14 @@ namespace RangedTools
                 
                 configMenu.AddBoolOption(
                     mod: ModManifest,
+                    name: () => str.Get("optionHalfTilePositionsName"),
+                    tooltip: () => str.Get("optionHalfTilePositionsTooltip"),
+                    getValue: () => Config.UseHalfTilePositions,
+                    setValue: value => Config.UseHalfTilePositions = value
+                );
+                
+                configMenu.AddBoolOption(
+                    mod: ModManifest,
                     name: () => str.Get("optionAllowRangedChargeName"),
                     tooltip: () => str.Get("optionAllowRangedChargeTooltip"),
                     getValue: () => Config.AllowRangedChargeEffects,
@@ -844,8 +852,25 @@ namespace RangedTools
                     tileRadius = tileRadiusOverride;
                 
                 Point point = new Point(x / 64, y / 64);
-                Vector2 tileLocation = f.getTileLocation();
-                __result = (double)Math.Abs((float)point.X - tileLocation.X) <= (double)tileRadius && (double)Math.Abs((float)point.Y - tileLocation.Y) <= (double)tileRadius;
+                if (!Config.UseHalfTilePositions) // Standard method: Round player's position down to nearest tile
+                {
+                    Vector2 tileLocation = f.getTileLocation();
+                    __result = (double)Math.Abs((float)point.X - tileLocation.X) <= (double)tileRadius && (double)Math.Abs((float)point.Y - tileLocation.Y) <= (double)tileRadius;
+                }
+                else // New method: Determine extents of tiles in range based on player position rounded favorably up/down
+                {
+                    // Round player position to nearest half-tile (i.e. 0, 0.5, 1, 1.5, 2, 2.5...).
+                    Vector2 playerPosition = new Vector2((float)Math.Round(f.position.Value.X / 32f) / 2f,
+                                                         (float)Math.Round(f.position.Value.Y / 32f) / 2f);
+                    
+                    // Determine the tiles on the edge of the range, rounding down for minimums and up for maximums.
+                    int minX = (int)playerPosition.X - tileRadius;
+                    int minY = (int)playerPosition.Y - tileRadius;
+                    int maxX = (int)Math.Ceiling(playerPosition.X) + tileRadius;
+                    int maxY = (int)Math.Ceiling(playerPosition.Y) + tileRadius;
+                    
+                    __result = point.X >= minX && point.X <= maxX && point.Y >= minY && point.Y <= maxY;
+                }
                 return false; // Don't do original function anymore
             }
             catch (Exception ex)
