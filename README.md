@@ -65,6 +65,12 @@ Affects how the Tool Hit Location display is determined (only when that game opt
 
 **2 (combination):** Indicates both of the above. May be desirable to know what will be targeted should the cursor go beyond the custom range.
 
+**UseHalfTilePositions (true or false)**
+
+Enabled (true) by default, this changes range calculations to feel more equal on all sides no matter where you're standing, rather than feeling lopsided when standing "between" tile units.
+
+Specifically, it rounds the player's position for calculation to the nearest half-tile (rather than just rounding down to a whole tile), then determines what tiles are within reach based on that. For instance, if the current tool has a range of 2 and you're horzontally positioned between two whole tile units, your horizontal range will effectively become "2.5" on both sides - the 2 tiles left of the left tile you're standing on, and the 2 tiles right of the right tile you're standing on.
+
 **AllowRangedChargeEffects (true or false)**
 
 Whether to use the custom range for charged tool use as well. If enabled (true), charge effects will activate starting from the tile the cursor is over when you release the button. (The charge-up animation should indicate the actual tiles that will be affected regardless of Tool Hit Location setting.) If disabled, they will always start from your farmer, like normal.
