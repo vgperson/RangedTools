@@ -92,7 +92,10 @@ namespace RangedTools
                 
                 patchPrefix(harmonyInstance, typeof(Utility), nameof(Utility.withinRadiusOfPlayer),
                             typeof(ModEntry), nameof(ModEntry.Prefix_withinRadiusOfPlayer));
-                
+
+                patchPrefix(harmonyInstance, typeof(Utility), nameof(Utility.tileWithinRadiusOfPlayer),
+                            typeof(ModEntry), nameof(ModEntry.Prefix_tileWithinRadiusOfPlayer));
+
                 patchPostfix(harmonyInstance, typeof(MeleeWeapon), nameof(MeleeWeapon.getAreaOfEffect),
                              typeof(ModEntry), nameof(ModEntry.Postfix_getAreaOfEffect));
                 
@@ -904,6 +907,54 @@ namespace RangedTools
             catch (Exception ex)
             {
                 Log("Error in withinRadiusOfPlayer: " + ex.Message + Environment.NewLine + ex.StackTrace);
+                return true; // Go to original function
+            }
+        }
+
+        /// <summary>Rewrite of Utility.tileWithinRadiusOfPlayer to add an override for the tileRadius argument.</summary>
+        /// <param name="__result">The result of the function.</param>
+        /// <param name="xTile">The tile X coordinate.</param>
+        /// <param name="yTile">The tile Y coordinate.</param>
+        /// <param name="tileRadius">The allowed radius, overriden if tileRadiusOverride is set.</param>
+        /// <param name="f">The Farmer placing the object.</param>
+        public static bool Prefix_tileWithinRadiusOfPlayer(ref bool __result, int xTile, int yTile, int tileRadius, Farmer f)
+        {
+            try
+            {
+                if (tileRadiusOverride == -1)
+                {
+                    __result = true;
+                    return false; // Don't do original function anymore
+                }
+                
+                if (tileRadiusOverride != 0)
+                    tileRadius = tileRadiusOverride;
+                
+                Point point = new Point(xTile, yTile);
+                if (!Config.UseHalfTilePositions) // Standard method: Round player's position down to nearest tile
+                {
+                    Vector2 tileLocation = f.getTileLocation();
+                    __result = (double)Math.Abs((float)point.X - tileLocation.X) <= (double)tileRadius && (double)Math.Abs((float)point.Y - tileLocation.Y) <= (double)tileRadius;
+                }
+                else // New method: Determine extents of tiles in range based on player position rounded favorably up/down
+                {
+                    // Round player position to nearest half-tile (i.e. 0, 0.5, 1, 1.5, 2, 2.5...).
+                    Vector2 playerPosition = new Vector2((float)Math.Round(f.position.Value.X / 32f) / 2f,
+                                                         (float)Math.Round(f.position.Value.Y / 32f) / 2f);
+                    
+                    // Determine the tiles on the edge of the range, rounding down for minimums and up for maximums.
+                    int minX = (int)playerPosition.X - tileRadius;
+                    int minY = (int)playerPosition.Y - tileRadius;
+                    int maxX = (int)Math.Ceiling(playerPosition.X) + tileRadius;
+                    int maxY = (int)Math.Ceiling(playerPosition.Y) + tileRadius;
+                    
+                    __result = point.X >= minX && point.X <= maxX && point.Y >= minY && point.Y <= maxY;
+                }
+                return false; // Don't do original function anymore
+            }
+            catch (Exception ex)
+            {
+                Log("Error in tileWithinRadiusOfPlayer: " + ex.Message + Environment.NewLine + ex.StackTrace);
                 return true; // Go to original function
             }
         }
