@@ -105,7 +105,7 @@ namespace RangedTools
                 patchPrefix(harmonyInstance, typeof(GameLocation), nameof(GameLocation.damageMonster),
                             typeof(ModEntry), nameof(ModEntry.Prefix_damageMonster),
                             new Type[] { typeof(Rectangle), typeof(int), typeof(int), typeof(bool), typeof(float),
-                                         typeof(int), typeof(float), typeof(float), typeof(bool), typeof(Farmer) });
+                                         typeof(int), typeof(float), typeof(float), typeof(bool), typeof(Farmer), typeof(bool) });
                 
                 patchPrefix(harmonyInstance, typeof(GameLocation), "isMonsterDamageApplicable",
                             typeof(ModEntry), nameof(ModEntry.Prefix_isMonsterDamageApplicable));
