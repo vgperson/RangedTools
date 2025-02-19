@@ -1,0 +1,83 @@
+{
+	// Option Headers
+	"headerRanges": "范围设置",
+	"headerRangedSwings": "远程挥动设置",
+	"headerUseOnTile": "脚下使用权限",
+	"headerFaceClick": "朝向点击方向",
+	"headerMisc": "杂项设置",
+	
+	// Ranges
+	"optionRangeName": "{{subject}}范围",
+	"optionRangeTooltip": "{{subject}}的最大作用范围（以玩家为中心的格数）。",
+	
+	"axeForRangeName": "斧头",
+	"axeForRangeTooltip": "斧头",
+	"pickaxeForRangeName": "十字镐",
+	"pickaxeForRangeTooltip": "十字镐",
+	"hoeForRangeName": "锄头",
+	"hoeForRangeTooltip": "锄头",
+	"wateringCanForRangeName": "浇水壶",
+	"wateringCanForRangeTooltip": "浇水壶",
+	"scytheForRangeName": "镰刀",
+	"scytheForRangeTooltip": "镰刀",
+	"weaponsForRangeName": "武器",
+	"weaponsForRangeTooltip": "近战武器",
+	"seedsForRangeName": "播种",
+	"seedsForRangeTooltip": "播种/施肥",
+	"objectsForRangeName": "物品放置",
+	"objectsForRangeTooltip": "放置物品",
+	
+	"rangeUnlimited": "无限",
+	"rangeDefault": "1格（默认）",
+	"rangeExtended": "{{tiles}}格",
+	
+	// Ranged Swings
+	"optionScytheSwingOriginName": "镰刀以光标为中心",
+	"optionScytheSwingOriginTooltip": "镰刀的作用区域以光标而非玩家为中心。",
+	"optionWeaponSwingOriginName": "武器以光标为中心",
+	"optionWeaponSwingOriginTooltip": "近战武器的攻击区域以光标而非玩家为中心。",
+	
+	// Usability
+	"optionSelfUsabilityName": "允许脚下使用{{tool}}",
+	"optionSelfUsabilityTooltip": "允许在玩家当前站立的位置使用{{tool}}。",
+	
+	"axeForUsabilityName": "斧头",
+	"axeForUsabilityTooltip": "斧头",
+	"pickaxeForUsabilityName": "十字镐",
+	"pickaxeForUsabilityTooltip": "十字镐",
+	"hoeForUsabilityName": "锄头",
+	"hoeForUsabilityTooltip": "锄头",
+	
+	// Turn To Click
+	"optionToolFaceClickName": "工具始终朝向点击方向",
+	"optionToolFaceClickTooltip": "使用工具时自动面向光标方向。",
+	
+	"optionWeaponFaceClickName": "武器始终朝向点击方向",
+	"optionWeaponFaceClickTooltip": "使用武器时自动面向光标方向。",
+	
+	// Miscellaneous
+	"optionToolHitLocationName": "工具命中位置显示",
+	"optionToolHitLocationTooltip": "控制工具命中位置指示器的逻辑（若启用）：\n原版逻辑：遵循游戏默认范围。\n新逻辑：适配扩展范围。\n混合模式：同时显示两种逻辑的指示。",
+	
+	"locationLogicOriginal": "原版逻辑",
+	"locationLogicNew": "新逻辑（默认）",
+	"locationLogicCombined": "混合模式",
+	
+	"optionHalfTilePositionsName": "使用半格精度",
+	"optionHalfTilePositionsTooltip": "优化范围计算，当玩家站在两格之间时，各方向范围判定更均衡。",
+	
+	"optionAllowRangedChargeName": "允许远程蓄力特效",
+	"optionAllowRangedChargeTooltip": "允许在扩展范围内进行蓄力操作，蓄力效果将从光标位置触发而非玩家位置。",
+	
+	"optionAttacksIgnoreObstaclesName": "攻击无视障碍物",
+	"optionAttacksIgnoreObstaclesTooltip": "允许攻击穿透障碍物命中怪物。",
+	
+	"optionDontCutGrassName": "禁止远程割草",
+	"optionDontCutGrassTooltip": "禁止镰刀和武器在扩展范围内割草（但仍可清除杂草）。",
+	
+	"optionMultigrabCrabPotsInRangeName": "一键收取范围内蟹笼",
+	"optionMultigrabCrabPotsInRangeTooltip": "对蟹笼操作时，自动处理物品放置范围内的所有蟹笼。不推荐开启，但可拯救放置过远的蟹笼。",
+	
+	"optionOnClickOnlyName": "仅点击时启用扩展范围",
+	"optionOnClickOnlyTooltip": "若启用，扩展范围仅在使用工具点击时生效。若禁用，所有工具操作均适用扩展范围。"
+}
