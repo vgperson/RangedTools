@@ -29,6 +29,7 @@ namespace RangedTools
         
         public static bool disableToolLocationOverride = false;
         public static int tileRadiusOverride = 0;
+        public static bool mouseFacingOverride = false;
         
         public static bool preventDraw = false;
         public static Texture2D preventDrawTexture;
@@ -70,6 +71,9 @@ namespace RangedTools
                 
                 patchPrefix(harmonyInstance, typeof(Game1), nameof(Game1.pressUseToolButton),
                             typeof(ModEntry), nameof(ModEntry.Prefix_pressUseToolButton));
+                
+                patchPrefix(harmonyInstance, typeof(Character), nameof(Character.getGeneralDirectionTowards),
+                            typeof(ModEntry), nameof(ModEntry.Prefix_getGeneralDirectionTowards));
                 
                 patchPrefix(harmonyInstance, typeof(Farmer), nameof(Farmer.draw),
                             typeof(ModEntry), nameof(ModEntry.Prefix_Farmer_draw),
@@ -695,7 +699,7 @@ namespace RangedTools
             }
         }
         
-        /// <summary>Turns player to face mouse if Tool Button is being held.</summary>
+        /// <summary>Turns player to face mouse if Tool Button is being held. If not desired, set override to keep direction.</summary>
         public static bool Prefix_pressUseToolButton()
         {
             try
@@ -703,15 +707,41 @@ namespace RangedTools
                 if (Game1.player == null) // Go to original function
                     return true;
                 
+                mouseFacingOverride = false;
                 if (specialClickActive && !specialClickLocation.Equals(Vector2.Zero)
                  && holdingToolButton(true) && shouldToolTurnToFace(Game1.player.CurrentTool, true))
                     Game1.player.faceGeneralDirection(specialClickLocation);
+                else
+                    mouseFacingOverride = true;
                 
                 return true; // Go to original function
             }
             catch (Exception ex)
             {
                 Log("Error in pressUseToolButton: " + ex.Message + Environment.NewLine + ex.StackTrace);
+                return true; // Go to original function
+            }
+        }
+        
+        /// <summary>When override is set by pressUseToolButton, return current direction so it doesn't change.</summary>
+        /// <param name="__instance">The instance of the Character.</param>
+        /// <param name="__result">The returned direction.</param>
+        public static bool Prefix_getGeneralDirectionTowards(Character __instance, ref int __result)
+        {
+            try
+            {
+                if (mouseFacingOverride)
+                {
+                    __result = __instance.FacingDirection;
+                    mouseFacingOverride = false;
+                    return false; // Don't do original function anymore
+                }
+                
+                return true; // Go to original function
+            }
+            catch (Exception ex)
+            {
+                Log("Error in getGeneralDirectionTowards: " + ex.Message + Environment.NewLine + ex.StackTrace);
                 return true; // Go to original function
             }
         }
